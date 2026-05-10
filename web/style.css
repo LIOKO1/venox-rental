@@ -68,7 +68,7 @@ button {
     align-items: flex-start;
     justify-content: space-between;
     gap: 24px;
-    padding: 28px 30px 18px;
+    padding: 28px 72px 18px 30px;
 }
 
 .eyebrow,
@@ -115,8 +115,8 @@ h1 {
 
 .close {
     position: absolute;
-    top: 14px;
-    right: 14px;
+    top: 16px;
+    right: 18px;
     width: 34px;
     height: 34px;
     border: 1px solid var(--line);

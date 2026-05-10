@@ -1,5 +1,4 @@
 local menuOpen = false
-local selectedIndex = 1
 local activeLocationIndex = nil
 local currentRental = nil
 local spawnedPeds = {}
@@ -129,46 +128,24 @@ local function hideTextUI()
     end
 end
 
-local function drawMenuText(text, x, y, scale, r, g, b, a, centre)
-    SetTextFont(4)
-    SetTextScale(scale, scale)
-    SetTextColour(r, g, b, a)
-    SetTextCentre(centre or false)
-    SetTextEntry('STRING')
-    AddTextComponentString(text)
-    DrawText(x, y)
-end
-
 local function closeMenu()
     menuOpen = false
     activeLocationIndex = nil
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'close' })
 end
 
 local function openRentalMenu(locationIndex)
-    selectedIndex = 1
     menuOpen = true
     activeLocationIndex = locationIndex
-end
-
-local function drawRentalMenu()
-    DrawRect(0.5, 0.5, 0.32, 0.44, 12, 15, 18, 235)
-    DrawRect(0.5, 0.295, 0.32, 0.055, 40, 140, 210, 245)
-    drawMenuText(Config.Text.menuTitle, 0.5, 0.276, 0.45, 255, 255, 255, 255, true)
-    drawMenuText(Config.Text.menuHint, 0.5, 0.685, 0.28, 190, 190, 190, 255, true)
-
-    local startY = 0.345
-    for index, vehicle in ipairs(Config.Vehicles) do
-        local y = startY + ((index - 1) * 0.052)
-        local selected = index == selectedIndex
-
-        if selected then
-            DrawRect(0.5, y + 0.015, 0.29, 0.043, 255, 255, 255, 32)
-        end
-
-        local color = selected and 255 or 210
-        drawMenuText(vehicle.label, 0.37, y, 0.34, color, color, color, 255, false)
-        drawMenuText(('$%s'):format(vehicle.price), 0.615, y, 0.34, 120, 220, 145, 255, false)
-    end
+    hideTextUI()
+    SetNuiFocus(true, true)
+    SendNUIMessage({
+        action = 'open',
+        title = Config.Text.menuTitle,
+        location = Config.Locations[locationIndex] and Config.Locations[locationIndex].label or 'Rental',
+        vehicles = Config.Vehicles
+    })
 end
 
 local function isSpawnClear(coords)
@@ -197,6 +174,34 @@ local function tryReturn()
     local plate = VenoxRental.TrimPlate(GetVehicleNumberPlateText(vehicle))
     TriggerServerEvent('venox-rental:server:returnVehicle', plate)
 end
+
+RegisterNUICallback('close', function(_, cb)
+    closeMenu()
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('rent', function(data, cb)
+    local vehicleIndex = tonumber(data and data.vehicleIndex)
+    local locationIndex = activeLocationIndex
+    local location = Config.Locations[locationIndex]
+
+    if not vehicleIndex or not Config.Vehicles[vehicleIndex] then
+        notify(Config.Text.invalidVehicle, 'error')
+        cb({ ok = false })
+        return
+    end
+
+    if not location or not isSpawnClear(location.spawn) then
+        notify(Config.Text.spawnBlocked, 'error')
+        closeMenu()
+        cb({ ok = false })
+        return
+    end
+
+    closeMenu()
+    TriggerServerEvent('venox-rental:server:rentVehicle', locationIndex, vehicleIndex)
+    cb({ ok = true })
+end)
 
 local function requestModel(model)
     local hash = joaat(model)
@@ -473,42 +478,6 @@ end)
 
 CreateThread(function()
     while true do
-        if menuOpen then
-            Wait(0)
-            drawRentalMenu()
-
-            if IsControlJustPressed(0, 172) then
-                selectedIndex = selectedIndex - 1
-                if selectedIndex < 1 then
-                    selectedIndex = #Config.Vehicles
-                end
-            elseif IsControlJustPressed(0, 173) then
-                selectedIndex = selectedIndex + 1
-                if selectedIndex > #Config.Vehicles then
-                    selectedIndex = 1
-                end
-            elseif IsControlJustPressed(0, 191) then
-                local locationIndex = activeLocationIndex
-                local location = Config.Locations[locationIndex]
-
-                if not location or not isSpawnClear(location.spawn) then
-                    notify(Config.Text.spawnBlocked, 'error')
-                    closeMenu()
-                else
-                    closeMenu()
-                    TriggerServerEvent('venox-rental:server:rentVehicle', locationIndex, selectedIndex)
-                end
-            elseif IsControlJustPressed(0, 177) then
-                closeMenu()
-            end
-        else
-            Wait(250)
-        end
-    end
-end)
-
-CreateThread(function()
-    while true do
         if getInteractionMode() == 'textui' then
             local sleep = 1000
             local ped = PlayerPedId()
@@ -600,4 +569,5 @@ AddEventHandler('onResourceStop', function(resource)
     end
 
     hideTextUI()
+    closeMenu()
 end)

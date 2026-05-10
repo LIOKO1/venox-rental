@@ -7,6 +7,14 @@ version '1.0.0'
 
 lua54 'yes'
 
+ui_page 'web/index.html'
+
+files {
+    'web/index.html',
+    'web/style.css',
+    'web/app.js'
+}
+
 shared_scripts {
     'config.lua',
     'shared/utils.lua'

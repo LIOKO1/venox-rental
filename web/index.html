@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Venox Rental</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <main class="rental-shell" id="app" aria-hidden="true">
+            <section class="panel" role="dialog" aria-modal="true" aria-labelledby="title">
+                <button class="close" id="close" type="button" aria-label="Close">X</button>
+
+                <header class="panel-header">
+                    <div>
+                        <p class="eyebrow" id="location">Rental Point</p>
+                        <h1 id="title">Vehicle Rental</h1>
+                    </div>
+                    <div class="status">
+                        <span></span>
+                        Available
+                    </div>
+                </header>
+
+                <div class="content">
+                    <aside class="summary">
+                        <p class="summary-label">Selected</p>
+                        <h2 id="selected-name">Choose a ride</h2>
+                        <p id="selected-model">Pick a vehicle from the list.</p>
+                        <div class="price-card">
+                            <span>Rental price</span>
+                            <strong id="selected-price">$0</strong>
+                        </div>
+                    </aside>
+
+                    <section class="vehicle-list" id="vehicle-list" aria-label="Rental vehicles"></section>
+                </div>
+
+                <footer class="actions">
+                    <button class="ghost" id="cancel" type="button">Cancel</button>
+                    <button class="primary" id="rent" type="button" disabled>Rent Vehicle</button>
+                </footer>
+            </section>
+        </main>
+
+        <script src="app.js"></script>
+    </body>
+</html>

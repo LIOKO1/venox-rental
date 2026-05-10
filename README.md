@@ -17,7 +17,7 @@ Set `Config.Framework = 'auto'` to let the script detect your framework, or forc
 - Text UI interaction support
 - `qb-target` support
 - `ox_target` support
-- Built-in lightweight rental menu
+- Clean built-in NUI rental menu
 - Configurable rental locations
 - Configurable vehicles and prices
 - Cash or bank payment
@@ -56,6 +56,8 @@ Config.TextUI = {
     position = 'left-center'
 }
 ```
+
+The interaction mode controls how players open the rental menu. The vehicle selection itself uses the built-in NUI.
 
 Target settings:
 

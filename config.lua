@@ -21,7 +21,7 @@ Config.Target = {
     distance = 2.5,
     icon = 'fas fa-car',
     rentLabel = 'Rent Vehicle',
-    returnLabel = 'Return Rental'
+    returnLabel = 'Return Vehicle'
 }
 
 Config.OneRentalPerPlayer = true
@@ -74,7 +74,7 @@ Config.Locations = {
 
 Config.Text = {
     rentPrompt = '[E] Rent Vehicle',
-    returnPrompt = '[E] Return Rental',
+    returnPrompt = '[E] Return Vehicle',
     menuTitle = 'Vehicle Rental',
     menuHint = 'Arrow Keys: Navigate  Enter: Select  Backspace: Close',
     noMoney = 'You do not have enough money.',

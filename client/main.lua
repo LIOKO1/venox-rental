@@ -239,6 +239,7 @@ local function createRentalVehicle(data)
     local vehicle = CreateVehicle(model, spawn.x, spawn.y, spawn.z, spawn.w, true, false)
     SetModelAsNoLongerNeeded(model)
 
+    SetEntityAsMissionEntity(vehicle, true, true)
     SetVehicleNumberPlateText(vehicle, data.plate)
     SetVehicleOnGroundProperly(vehicle)
     SetVehicleDirtLevel(vehicle, Config.VehicleDirtLevel or 0.0)
@@ -268,7 +269,8 @@ RegisterNetEvent('venox-rental:client:finishReturn', function(plate)
     plate = VenoxRental.TrimPlate(plate)
 
     if Config.ReturnDeletesVehicle and currentRental and currentRental.vehicle and DoesEntityExist(currentRental.vehicle) then
-        DeleteEntity(currentRental.vehicle)
+        SetEntityAsMissionEntity(currentRental.vehicle, true, true)
+        DeleteVehicle(currentRental.vehicle)
     end
 
     if currentRental and currentRental.plate == plate then
@@ -478,16 +480,17 @@ end)
 
 CreateThread(function()
     while true do
-        if getInteractionMode() == 'textui' then
-            local sleep = 1000
-            local ped = PlayerPedId()
-            local playerCoords = GetEntityCoords(ped)
-            local textShown = false
+        local sleep = 1000
+        local mode = getInteractionMode()
+        local ped = PlayerPedId()
+        local playerCoords = GetEntityCoords(ped)
+        local textShown = false
 
-            for index, location in ipairs(Config.Locations) do
-                local rentCoords = vec3(location.coords.x, location.coords.y, location.coords.z)
-                local rentDistance = #(playerCoords - rentCoords)
+        for index, location in ipairs(Config.Locations) do
+            local rentCoords = vec3(location.coords.x, location.coords.y, location.coords.z)
+            local rentDistance = #(playerCoords - rentCoords)
 
+            if mode == 'textui' then
                 if Config.ShowMarkers and rentDistance < Config.MarkerDistance then
                     sleep = 0
                     DrawMarker(2, rentCoords.x, rentCoords.y, rentCoords.z + 0.15, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.25, 0.25, 40, 140, 210, 180, false, true, 2, nil, nil, false)
@@ -506,40 +509,37 @@ CreateThread(function()
                         tryRent(index)
                     end
                 end
+            end
 
-                if location.returnCoords then
-                    local returnDistance = #(playerCoords - location.returnCoords)
+            if location.returnCoords then
+                local returnDistance = #(playerCoords - location.returnCoords)
 
-                    if Config.ShowMarkers and returnDistance < Config.MarkerDistance then
-                        sleep = 0
-                        DrawMarker(1, location.returnCoords.x, location.returnCoords.y, location.returnCoords.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8, 2.8, 0.5, 120, 220, 145, 110, false, true, 2, nil, nil, false)
+                if Config.ShowMarkers and returnDistance < Config.MarkerDistance then
+                    sleep = 0
+                    DrawMarker(1, location.returnCoords.x, location.returnCoords.y, location.returnCoords.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.2, 3.2, 0.5, 120, 220, 145, 135, false, true, 2, nil, nil, false)
+                end
+
+                if returnDistance < 3.0 and IsPedInAnyVehicle(ped, false) then
+                    sleep = 0
+                    textShown = true
+                    showTextUI(Config.Text.returnPrompt)
+
+                    if getTextUIProvider() == 'draw3d' then
+                        drawText3d(vec3(location.returnCoords.x, location.returnCoords.y, location.returnCoords.z + 0.8), Config.Text.returnPrompt)
                     end
 
-                    if returnDistance < 3.0 and IsPedInAnyVehicle(ped, false) then
-                        sleep = 0
-                        textShown = true
-                        showTextUI(Config.Text.returnPrompt)
-
-                        if getTextUIProvider() == 'draw3d' then
-                            drawText3d(vec3(location.returnCoords.x, location.returnCoords.y, location.returnCoords.z + 0.8), Config.Text.returnPrompt)
-                        end
-
-                        if IsControlJustPressed(0, Config.OpenKey) then
-                            tryReturn()
-                        end
+                    if IsControlJustPressed(0, Config.OpenKey) then
+                        tryReturn()
                     end
                 end
             end
-
-            if not textShown then
-                hideTextUI()
-            end
-
-            Wait(sleep)
-        else
-            hideTextUI()
-            Wait(1000)
         end
+
+        if not textShown then
+            hideTextUI()
+        end
+
+        Wait(sleep)
     end
 end)
 

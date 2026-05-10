@@ -1,0 +1,36 @@
+# FiveM/cache
+cache/
+*.cache
+
+# Dependencies/build output
+node_modules/
+dist/
+build/
+.vite/
+
+# Logs
+*.log
+logs/
+
+# Environment/secrets
+.env
+.env.*
+!.env.example
+config.local.lua
+*.secret.lua
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Archives/backups
+*.zip
+*.rar
+*.7z
+*.bak
+*.backup

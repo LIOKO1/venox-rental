@@ -1,6 +1,7 @@
 local Bridge = {
     framework = 'standalone',
-    object = nil
+    object = nil,
+    initialized = false
 }
 
 local function resourceStarted(resource)
@@ -29,6 +30,7 @@ end
 
 function Bridge.Init()
     Bridge.framework = detectFramework()
+    Bridge.initialized = true
 
     if Bridge.framework == 'qb' then
         Bridge.object = exports['qb-core']:GetCoreObject()
@@ -41,11 +43,34 @@ function Bridge.Init()
     print(('[venox-rental] Framework: %s'):format(Bridge.framework))
 end
 
+function Bridge.Refresh()
+    local framework = detectFramework()
+    if framework ~= Bridge.framework or not Bridge.initialized then
+        Bridge.framework = framework
+        Bridge.initialized = true
+
+        if Bridge.framework == 'qb' then
+            Bridge.object = exports['qb-core']:GetCoreObject()
+        elseif Bridge.framework == 'qbox' then
+            Bridge.object = exports.qbx_core
+        elseif Bridge.framework == 'esx' then
+            Bridge.object = exports['es_extended']:getSharedObject()
+        else
+            Bridge.object = nil
+        end
+
+        print(('[venox-rental] Framework refreshed: %s'):format(Bridge.framework))
+    end
+end
+
 function Bridge.GetFramework()
+    Bridge.Refresh()
     return Bridge.framework
 end
 
 function Bridge.GetPlayer(source)
+    Bridge.Refresh()
+
     if Bridge.framework == 'qb' then
         return Bridge.object.Functions.GetPlayer(source)
     end
@@ -62,6 +87,8 @@ function Bridge.GetPlayer(source)
 end
 
 function Bridge.GetMoney(source, account)
+    Bridge.Refresh()
+
     local player = Bridge.GetPlayer(source)
     if not player then
         return 0
@@ -72,7 +99,15 @@ function Bridge.GetMoney(source, account)
     end
 
     if Bridge.framework == 'qbox' then
-        return player.PlayerData.money[account] or 0
+        local ok, money = pcall(function()
+            return Bridge.object:GetMoney(source, account)
+        end)
+
+        if ok and money ~= nil then
+            return money
+        end
+
+        return player.PlayerData and player.PlayerData.money and player.PlayerData.money[account] or 0
     end
 
     if Bridge.framework == 'esx' then
@@ -88,6 +123,8 @@ function Bridge.GetMoney(source, account)
 end
 
 function Bridge.RemoveMoney(source, account, amount, reason)
+    Bridge.Refresh()
+
     amount = tonumber(amount) or 0
     if amount <= 0 then
         return true
@@ -99,11 +136,24 @@ function Bridge.RemoveMoney(source, account, amount, reason)
     end
 
     if Bridge.framework == 'qb' then
-        return player.Functions.RemoveMoney(account, amount, reason or 'vehicle-rental')
+        local removed = player.Functions.RemoveMoney(account, amount, reason or 'vehicle-rental')
+        return removed == true
     end
 
     if Bridge.framework == 'qbox' then
-        return player.Functions.RemoveMoney(account, amount, reason or 'vehicle-rental')
+        local ok, removed = pcall(function()
+            return Bridge.object:RemoveMoney(source, account, amount, reason or 'vehicle-rental')
+        end)
+
+        if ok and removed ~= nil then
+            return removed == true
+        end
+
+        if player.Functions and player.Functions.RemoveMoney then
+            return player.Functions.RemoveMoney(account, amount, reason or 'vehicle-rental') == true
+        end
+
+        return false
     end
 
     if Bridge.framework == 'esx' then
@@ -120,6 +170,8 @@ function Bridge.RemoveMoney(source, account, amount, reason)
 end
 
 function Bridge.AddMoney(source, account, amount, reason)
+    Bridge.Refresh()
+
     amount = tonumber(amount) or 0
     if amount <= 0 then
         return true
@@ -136,8 +188,20 @@ function Bridge.AddMoney(source, account, amount, reason)
     end
 
     if Bridge.framework == 'qbox' then
-        player.Functions.AddMoney(account, amount, reason or 'vehicle-rental-refund')
-        return true
+        local ok, added = pcall(function()
+            return Bridge.object:AddMoney(source, account, amount, reason or 'vehicle-rental-refund')
+        end)
+
+        if ok and added ~= nil then
+            return added == true
+        end
+
+        if player.Functions and player.Functions.AddMoney then
+            player.Functions.AddMoney(account, amount, reason or 'vehicle-rental-refund')
+            return true
+        end
+
+        return false
     end
 
     if Bridge.framework == 'esx' then

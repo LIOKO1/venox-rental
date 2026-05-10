@@ -21,8 +21,18 @@ RegisterNetEvent('venox-rental:server:rentVehicle', function(locationIndex, vehi
 
     local price = tonumber(rental.price) or 0
     local account = Config.PaymentAccount or 'cash'
+    local balance = VenoxRental.Bridge.GetMoney(source, account)
 
-    if VenoxRental.Bridge.GetMoney(source, account) < price then
+    VenoxRental.Debug(('Rent request source=%s framework=%s account=%s balance=%s price=%s vehicle=%s'):format(
+        source,
+        VenoxRental.Bridge.GetFramework(),
+        account,
+        balance,
+        price,
+        rental.model
+    ))
+
+    if balance < price then
         notify(source, Config.Text.noMoney, 'error')
         return
     end
